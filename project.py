@@ -1,6 +1,7 @@
 import requests
 import json
 import pandas as pd
+import datetime
 
 class CompanyCamProject:
     """
@@ -100,11 +101,14 @@ class CompanyCamProject:
                 break
             # Initialize a dictionary to store data for the current page
             page_data = {'id': [], 'url': [], 'date': [], 'user': [], 'lat': [], 'lon': []}
+            # function to convert timestamp to readable date
+            readable_date = lambda x: datetime.datetime.fromtimestamp(int(x)).strftime('%Y-%m-%d %H:%M:%S')
             # loop through photos data and store relevant information in the dictionary
             for photo in photos_data:
                 page_data['id'].append(photo['id'])
                 page_data['url'].append(photo['uris'][3]['uri'])
-                page_data['date'].append(photo['captured_at'])
+                # convert the timestamp to readable date
+                page_data['date'].append(readable_date(photo['captured_at']))
                 page_data['user'].append(photo['creator_name'])
                 page_data['lat'].append(photo['coordinates']['lat'])
                 page_data['lon'].append(photo['coordinates']['lon'])
