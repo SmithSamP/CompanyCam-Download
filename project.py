@@ -66,7 +66,7 @@ class CompanyCamProject:
         # return the project details
         return project_data
     
-    def get_project_photos(self, project_id):
+    def get_project_photos(self, project_id, start_date=None, end_date=None):
         """
         Gets photos for a specific CompanyCam project.
 
@@ -81,9 +81,15 @@ class CompanyCamProject:
         photos_dataFrame = pd.DataFrame(columns=['id', 'url', 'date', 'user', 'lat', 'lon'])
 
         # loop through pages of photos data
-        for index in range(10000):
+        for index in range(1,10000):
             # construct the URL for the API call
             url = f"{self.base_url}/projects/{project_id}/photos?page={index}&per_page=1000"
+
+            if start_date != None:
+                url += f"&start_date={start_date}"
+
+            if end_date != None:
+                url += f"&end_date={end_date}"
             # make the API call
             try:
                 response = requests.get(url, headers=self.headers)
@@ -102,13 +108,13 @@ class CompanyCamProject:
             # Initialize a dictionary to store data for the current page
             page_data = {'id': [], 'url': [], 'date': [], 'user': [], 'lat': [], 'lon': []}
             # function to convert timestamp to readable date
-            readable_date = lambda x: datetime.datetime.fromtimestamp(int(x)).strftime('%Y-%m-%d %H:%M:%S')
+
             # loop through photos data and store relevant information in the dictionary
             for photo in photos_data:
                 page_data['id'].append(photo['id'])
                 page_data['url'].append(photo['uris'][3]['uri'])
                 # convert the timestamp to readable date
-                page_data['date'].append(readable_date(photo['captured_at']))
+                page_data['date'].append(photo['captured_at'])
                 page_data['user'].append(photo['creator_name'])
                 page_data['lat'].append(photo['coordinates']['lat'])
                 page_data['lon'].append(photo['coordinates']['lon'])
@@ -126,14 +132,19 @@ class CompanyCamProject:
 
 
 
-# if __name__ == "__main__":
-#     # Define your CompanyCam API access token
-#     access_token = ""
-#     project_id = "123"
-#     ccproject = CompanyCamProject(access_token)
-#     ccproject.get_project(project_id)
-#     photos = ccproject.get_project_photos(project_id)
-#     print(photos)
+if __name__ == "__main__":
+    start_time = 1713423600
+    end_time = 1713510000
+    #     # Define your CompanyCam API access token
+    with open('token.txt', 'r') as file:
+        token = file.read().strip()
+
+    # Assign token to variable
+    project_id = '62018691'
+    ccproject = CompanyCamProject(token)
+    ccproject.get_project(project_id)
+    photos = ccproject.get_project_photos(project_id, start_time, end_time)
+    print(photos)
 
 
 
