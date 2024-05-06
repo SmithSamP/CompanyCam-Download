@@ -153,20 +153,14 @@ class CompanyCamProject:
         if photos_data == []:
             return None
         # Initialize a dictionary to store data for the current page
-        page_data = {'id': [], 'url': [], 'date': [], 'user': [], 'project': [], 'lat': [], 'lon': []}
         # function to convert timestamp to readable date
+        page_df = pd.DataFrame(photos_data)
 
+        page_df['url'] = page_df['uris'].apply(lambda x: x[3]['uri'])
+        page_df['lat'] = page_df['coordinates'].apply(lambda x: x['lat'])
+        page_df['lon'] = page_df['coordinates'].apply(lambda x: x['lon'])
         # loop through photos data and store relevant information in the dictionary
-        for photo in photos_data:
-            page_data['id'].append(photo['id'])
-            page_data['url'].append(photo['uris'][3]['uri'])
-            # convert the timestamp to readable date
-            page_data['date'].append(photo['captured_at'])
-            page_data['user'].append(photo['creator_name'])
-            page_data['project'].append(photo['project_id'])
-            page_data['lat'].append(photo['coordinates']['lat'])
-            page_data['lon'].append(photo['coordinates']['lon'])
-        return pd.DataFrame(page_data)
+        return page_df
     
     def download_photo(self, photo_url, filename):
         """
@@ -223,6 +217,9 @@ if __name__ == "__main__":
     print(ccproject.get_groups())
     group_id = '11083'
     photos = ccproject.get_group_photos(group_id, start_time, end_time)
+
+    # Write photos to a CSV file
+    photos.to_csv('photos.csv', index=False)
     with Bar('Processing...',suffix='%(percent)d%%- %(eta)ds',max=len(photos)) as bar:
         for index, row in photos.iterrows():
             filename = 'D:\\Photos\\'+f"photo_{row['id']}.jpg"
