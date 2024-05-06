@@ -50,15 +50,7 @@ class CompanyCamProject:
         # construct the URL for the API call
         url = f"{self.base_url}/projects/{project_id}"
         # make the API call
-        try:
-            response = requests.get(url, headers=self.headers)
-            response.raise_for_status()
-        except requests.exceptions.HTTPError as err:
-            print(f'Invalid project ID. Please provide a valid project ID. Error: {err}')
-            return None
-        except requests.exceptions.ConnectionError as err:
-            print(f'Could not connect. Error: {err}')
-            return None
+        response = self.get_response(url)
         # parse the response data 
         project_data = response.json()
         # store the project details in the object attributes
@@ -146,17 +138,16 @@ class CompanyCamProject:
         # return the photos dataFrame
         return photos_dataFrame
     
+    def get_groups(self):
+        url = f"{self.base_url}/groups?per_page=1000"
+        response = self.get_response(url)
+        groups_data = response.json()
+        groups_df = pd.DataFrame(groups_data)
+        groups_df = groups_df[['id', 'name']]
+        return groups_df
+    
     def make_api_call(self,url):
-        try:
-            response = requests.get(url, headers=self.headers)
-            response.raise_for_status()
-        except requests.exceptions.HTTPError as err:
-            print(f'Invalid project ID. Please provide a valid project ID. Error: {err}')
-            return None
-        except requests.exceptions.ConnectionError as err:
-            print(f'Could not connect. Error: {err}')
-            return None
-        
+        response = self.get_response(url)
         photos_data = response.json()
         # break the loop if no more photos are available on current page
         if photos_data == []:
@@ -201,6 +192,19 @@ class CompanyCamProject:
             return True
         else:
             return False
+        
+    def get_response(self, url):
+        try:
+            response = requests.get(url, headers=self.headers)
+            response.raise_for_status()
+            return response
+        except requests.exceptions.HTTPError as err:
+            print(f'Invalid project ID. Please provide a valid project ID. Error: {err}')
+            return None
+        except requests.exceptions.ConnectionError as err:
+            print(f'Could not connect. Error: {err}')
+            return None
+        
 
 
 
@@ -216,6 +220,7 @@ if __name__ == "__main__":
     ccproject = CompanyCamProject(token)
     ccproject.get_project(project_id)
     # photos = ccproject.get_project_photos(project_id, start_time, end_time)
+    print(ccproject.get_groups())
     group_id = '11083'
     photos = ccproject.get_group_photos(group_id, start_time, end_time)
     with Bar('Processing...',suffix='%(percent)d%%- %(eta)ds',max=len(photos)) as bar:
