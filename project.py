@@ -12,8 +12,6 @@ class CompanyCam:
         self.name = None
         self.id = None
         self.project_number = None
-
-        # Set headers with authorization for API calls
         self.headers = {"Authorization": f"Bearer {self.api_token}"}
 
     def __str__(self):
@@ -24,17 +22,12 @@ class CompanyCam:
 
 
     def get_project(self, project_id):
-        # construct the URL for the API call
         url = f"{self.base_url}/projects/{project_id}"
-        # make the API call
         response = self.get_response(url)
-        # parse the response data 
         project_data = response.json()
-        # store the project details in the object attributes
         self.name = project_data["name"]
         self.id = project_data["id"]
         self.project_number = project_data["name"].split(" ")[0]
-        # return the project details
         return project_data
     
     def get_groups(self):
@@ -44,16 +37,19 @@ class CompanyCam:
         groups_df = pd.DataFrame(groups_data)
         return groups_df
     
+    def get_photos(self, start_date=None, end_date=None):
+        url = f"{self.base_url}/photos?page=***&per_page=1000"
+        photos_dataFrame = self.build_dataframe(url, start_date, end_date)
+        return photos_dataFrame
+    
     def get_project_photos(self, project_id, start_date=None, end_date=None):
         url = f"{self.base_url}/projects/{project_id}/photos?page=***&per_page=1000"
         photos_dataFrame = self.build_dataframe(url, start_date, end_date)
-        # return the photos dataFrame
         return photos_dataFrame
     
     def get_group_photos(self, group_id, start_date=None, end_date=None):
         url = f"{self.base_url}/photos?page=***&per_page=1000&group_ids={group_id}"
         photos_dataFrame = self.build_dataframe(url, start_date, end_date)
-        # return the photos dataFrame
         return photos_dataFrame
     
     def get_response(self, url):
@@ -71,13 +67,9 @@ class CompanyCam:
     def make_api_call(self,url):
         response = self.get_response(url)
         photos_data = response.json()
-        # break the loop if no more photos are available on current page
         if photos_data == []:
             return None
-        # Initialize a dictionary to store data for the current page
-        # function to convert timestamp to readable date
         page_df = pd.DataFrame(photos_data)
-        # loop through photos data and store relevant information in the dictionary
         return page_df
 
     def build_dataframe(self, url, start_date=None, end_date=None):
@@ -89,33 +81,22 @@ class CompanyCam:
             url += f"&end_date={end_date}"
 
         for index in range(1,10000):
-            # make the API call
             indexed_url = url.replace('***', str(index))
             page_data = self.make_api_call(indexed_url)
-            # convert the dictionary to a pandas dataFrame
             print(f"Retrieved page {index} of photos")
             if page_data is None:
                 break
-            # if the dataFrame is empty, assign the current page data to it otherwise concatenate the data
             if photos_dataFrame.empty:
                 photos_dataFrame = page_data
                 continue
             photos_dataFrame = pd.concat([photos_dataFrame, page_data], ignore_index=True)
-
-        # return the photos dataFrame
         return photos_dataFrame
         
     def download_photo(self, photo_url, filename):
-        # make the API call to download the photo
         response = requests.get(photo_url)
         if response.status_code == 200:
             with open(filename, "wb") as f:
                 f.write(response.content)
-
-            # exif_dict = piexif.load(filename)  # Load EXIF data
-            # # ... You can also modify EXIF data here if needed ... 
-            # exif_bytes = piexif.dump(exif_dict)
-            # piexif.insert(exif_bytes, filename)
             return True
         else:
             return False
