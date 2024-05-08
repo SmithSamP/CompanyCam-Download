@@ -2,8 +2,10 @@ import requests
 import json
 import pandas as pd
 import datetime
+
 # import piexif
 from progress.bar import Bar
+
 
 class CompanyCam:
     def __init__(self, api_token, base_url="https://api.companycam.com/v2"):
@@ -17,9 +19,8 @@ class CompanyCam:
     def __str__(self):
         if self.name != None and self.id != None:
             return f"CompanyCam Project: {self.name}, ID: {self.id}"
-        
-        return "CompanyCam Project not defined. Run get_project() to retrieve project details."
 
+        return "CompanyCam Project not defined. Run get_project() to retrieve project details."
 
     def get_project(self, project_id):
         url = f"{self.base_url}/projects/{project_id}"
@@ -29,42 +30,44 @@ class CompanyCam:
         self.id = project_data["id"]
         self.project_number = project_data["name"].split(" ")[0]
         return project_data
-    
+
     def get_groups(self):
         url = f"{self.base_url}/groups?per_page=1000"
         response = self.get_response(url)
         groups_data = response.json()
         groups_df = pd.DataFrame(groups_data)
         return groups_df
-    
+
     def get_photos(self, start_date=None, end_date=None):
         url = f"{self.base_url}/photos?page=***&per_page=1000"
         photos_dataFrame = self.build_dataframe(url, start_date, end_date)
         return photos_dataFrame
-    
+
     def get_project_photos(self, project_id, start_date=None, end_date=None):
         url = f"{self.base_url}/projects/{project_id}/photos?page=***&per_page=1000"
         photos_dataFrame = self.build_dataframe(url, start_date, end_date)
         return photos_dataFrame
-    
+
     def get_group_photos(self, group_id, start_date=None, end_date=None):
         url = f"{self.base_url}/photos?page=***&per_page=1000&group_ids={group_id}"
         photos_dataFrame = self.build_dataframe(url, start_date, end_date)
         return photos_dataFrame
-    
+
     def get_response(self, url):
         try:
             response = requests.get(url, headers=self.headers)
             response.raise_for_status()
             return response
         except requests.exceptions.HTTPError as err:
-            print(f'Invalid project ID. Please provide a valid project ID. Error: {err}')
+            print(
+                f"Invalid project ID. Please provide a valid project ID. Error: {err}"
+            )
             return None
         except requests.exceptions.ConnectionError as err:
-            print(f'Could not connect. Error: {err}')
+            print(f"Could not connect. Error: {err}")
             return None
-        
-    def make_api_call(self,url):
+
+    def make_api_call(self, url):
         response = self.get_response(url)
         photos_data = response.json()
         if photos_data == []:
@@ -80,8 +83,8 @@ class CompanyCam:
         if end_date != None:
             url += f"&end_date={end_date}"
 
-        for index in range(1,10000):
-            indexed_url = url.replace('***', str(index))
+        for index in range(1, 10000):
+            indexed_url = url.replace("***", str(index))
             page_data = self.make_api_call(indexed_url)
             print(f"Retrieved page {index} of photos")
             if page_data is None:
@@ -89,9 +92,11 @@ class CompanyCam:
             if photos_dataFrame.empty:
                 photos_dataFrame = page_data
                 continue
-            photos_dataFrame = pd.concat([photos_dataFrame, page_data], ignore_index=True)
+            photos_dataFrame = pd.concat(
+                [photos_dataFrame, page_data], ignore_index=True
+            )
         return photos_dataFrame
-        
+
     def download_photo(self, photo_url, filename):
         response = requests.get(photo_url)
         if response.status_code == 200:
@@ -100,32 +105,3 @@ class CompanyCam:
             return True
         else:
             return False
-        
-
-
-
-if __name__ == "__main__":
-    start_time = 1713423600
-    end_time = 1713510000
-    #     # Define your CompanyCam API access token
-    with open('token.txt', 'r') as file:
-        token = file.read().strip()
-
-    # Assign token to variable
-    project_id = '62018691'
-    ccproject = CompanyCam(token)
-    ccproject.get_project(project_id)
-    # photos = ccproject.get_project_photos(project_id, start_time, end_time)
-    print(ccproject.get_groups())
-    group_id = '11083'
-    photos = ccproject.get_group_photos(group_id, start_time, end_time)
-
-    with Bar('Processing...',suffix='%(percent)d%%- %(eta)ds',max=len(photos)) as bar:
-        for index, row in photos.iterrows():
-            filename = 'D:\\Photos\\'+f"photo_{row['id']}.jpg"
-            ccproject.download_photo(row['url'], filename)
-            bar.next()
-    print(f"Downloaded {len(photos)} photos.")
-
-
-
